@@ -15,6 +15,8 @@
     "__BASENAME__" : false
   },
   "rules": {
-    "semi" : [2, "always"]
+    "semi" : [2, "always"],
+    "jsx-quotes": 0,
+    "comma-dangle": 0
   }
 }
