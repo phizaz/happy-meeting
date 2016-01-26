@@ -36,6 +36,10 @@ export class HomeView extends React.Component {
       this.props.homeTitleChange(event.target.value);
     };
 
+    const loginText = this.props.auth._login.loading
+      ? <span>Logging in..</span>
+      : <span>Discover the meeting time</span>;
+
     return (
       <div className='container text-center'>
 
@@ -67,8 +71,16 @@ export class HomeView extends React.Component {
                 placeholder="ใส่หัวข้อของคำถาม"/>
             </div>
             <div className="form-group">
-              <button className='btn btn-lg btn-primary'
-                      onClick={this.props.loginAsync}>Discover the time, <small>Login with Facebook</small></button>
+              <div className="btn-group">
+                <button className='btn btn-lg btn-primary'
+                  onClick={this.props.loginAsync}>
+                  {loginText}
+                </button>
+                <button className='btn btn-lg btn-primary'
+                  disabled="disabled">
+                  with <i className="fa fa-facebook-official"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>

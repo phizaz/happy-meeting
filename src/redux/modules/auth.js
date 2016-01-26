@@ -7,21 +7,20 @@ const fireRef = new Firebase(FIREBASE);
 // ------------------------------------
 // Constants
 // ------------------------------------
-export const LOGIN_REQUEST = 'LOGIN_REQUEST';
-export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
-export const LOGIN_ERROR = 'LOGIN_ERROR';
+const LOGIN_REQUEST = 'LOGIN_REQUEST';
+const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
+const LOGIN_ERROR = 'LOGIN_ERROR';
 
-export const LOGOUT_REQUEST = 'LOGOUT_REQUEST';
-export const LOGOUT_SUCCESS = 'LOGOUT_SUCCESS';
+const LOGOUT_SUCCESS = 'LOGOUT_SUCCESS';
 
 // ------------------------------------
 // Actions
 // ------------------------------------
-export const loginRequest = createAction(LOGIN_REQUEST, () => null);
-export const loginSuccess = createAction(LOGIN_SUCCESS, (authData) => authData);
-export const loginError = createAction(LOGIN_ERROR, (error) => new Error(error));
+const loginRequest = createAction(LOGIN_REQUEST, () => null);
+const loginSuccess = createAction(LOGIN_SUCCESS, (authData) => authData);
+const loginError = createAction(LOGIN_ERROR, (error) => new Error(error));
 
-export const loginAsync = () => {
+const loginAsync = () => {
   return (dispatch, getState) => {
     dispatch(loginRequest());
 
@@ -32,7 +31,8 @@ export const loginAsync = () => {
             dispatch(loginError(error));
             reject(error);
           } else {
-            dispatch(loginSuccess(authData));
+            // listener will handle this
+            // dispatch(loginSuccess(authData));
             resolve(authData);
           }
         });
@@ -40,13 +40,19 @@ export const loginAsync = () => {
   };
 };
 
-export const logoutRequest = createAction(LOGOUT_REQUEST, () => null);
-export const logoutSuccess = createAction(LOGOUT_SUCCESS, () => null);
-
-export const logout = () => {
+const loginListener = () => {
   return (dispatch, getState) => {
-    dispatch(logoutRequest());
+    fireRef.onAuth(
+      (authData) => {
+        dispatch(loginSuccess(authData));
+      });
+  };
+};
 
+const logoutSuccess = createAction(LOGOUT_SUCCESS, () => null);
+
+const logout = () => {
+  return (dispatch, getState) => {
     fireRef.unauth();
     dispatch(logoutSuccess());
   };
@@ -55,6 +61,10 @@ export const logout = () => {
 export const actions = {
   loginAsync,
   logout
+};
+
+export const listeners = {
+  loginListener
 };
 
 // ------------------------------------
