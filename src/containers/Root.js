@@ -2,6 +2,11 @@ import React, { PropTypes } from 'react';
 import { Provider } from 'react-redux';
 import { Router } from 'react-router';
 
+import {allOff} from 'redux/utils/firebaseWrapper';
+
+import {listeners as authListeners} from 'redux/modules/auth';
+import {listeners as homeListeners} from 'redux/modules/home';
+
 export default class Root extends React.Component {
   static propTypes = {
     history: PropTypes.object.isRequired,
@@ -33,6 +38,27 @@ export default class Root extends React.Component {
   }
 
   render () {
+    // this is important for HMR
+    setTimeout(() => {
+      // stop all the listeners
+      console.log('stop all the listeners');
+      allOff();
+
+      // start all the listeners
+      console.log('start all the listeners');
+
+      const listeners = {
+        ...authListeners,
+        ...homeListeners
+      };
+
+      Object.keys(listeners)
+        .forEach(idx => {
+          console.log('idx:', idx);
+          this.props.store.dispatch(listeners[idx]());
+        });
+    });
+
     return (
       <Provider store={this.props.store}>
         <div style={{ height: '100%' }}>

@@ -23,11 +23,16 @@ export class HomeView extends React.Component {
     homeNameChange: PropTypes.func.isRequired,
     homeTitleChange: PropTypes.func.isRequired,
     loginAsync: PropTypes.func.isRequired,
+    createAsync: PropTypes.func.isRequired,
+    logout: PropTypes.func.isRequired,
     auth: PropTypes.object.isRequired,
-    home: PropTypes.object.isRequired
+    home: PropTypes.object.isRequired,
   };
 
   render () {
+    const auth = this.props.auth;
+    const home = this.props.home;
+
     const handleNameChange = (event) => {
       this.props.homeNameChange(event.target.value);
     };
@@ -36,9 +41,16 @@ export class HomeView extends React.Component {
       this.props.homeTitleChange(event.target.value);
     };
 
-    const loginText = this.props.auth._login.loading
+    const handleClick = () => {
+      this.props.loginAsync()
+        .then(() => this.props.createAsync(home.name, home.title));
+    };
+
+    const loginText = auth._login.loading
       ? <span>Logging in..</span>
-      : <span>Discover the meeting time</span>;
+      : auth.authData
+        ? <span>You're logged in</span>
+        : <span>Discover the meeting time</span>;
 
     return (
       <div className='container text-center'>
@@ -58,14 +70,14 @@ export class HomeView extends React.Component {
           <div className='col-xs-12'>
             <div className="form-group">
               <input type="text"
-                value={this.props.home.name}
+                value={home.name}
                 onChange={handleNameChange}
                 className="form-control input-md"
                 placeholder="ใส่ชื่อเรียกสั้น ๆ"/>
             </div>
             <div className="form-group">
               <input type="text"
-                value={this.props.home.title}
+                value={home.title}
                 onChange={handleTitleChange}
                 className="form-control input-lg"
                 placeholder="ใส่หัวข้อของคำถาม"/>
@@ -73,12 +85,20 @@ export class HomeView extends React.Component {
             <div className="form-group">
               <div className="btn-group">
                 <button className='btn btn-lg btn-primary'
-                  onClick={this.props.loginAsync}>
+                  disabled={!home.name || !home.title}
+                  onClick={handleClick}>
                   {loginText}
                 </button>
                 <button className='btn btn-lg btn-primary'
                   disabled="disabled">
                   with <i className="fa fa-facebook-official"></i>
+                </button>
+              </div>
+
+              <div className="btn-group">
+                <button className='btn btn-lg btn-primary'
+                  onClick={this.props.logout}>
+                  Logout
                 </button>
               </div>
             </div>

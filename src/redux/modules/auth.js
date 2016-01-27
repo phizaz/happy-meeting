@@ -1,6 +1,7 @@
 import { createAction, handleActions } from 'redux-actions';
 import {FIREBASE} from 'redux/constant';
 import Firebase from 'firebase';
+import {wrap} from 'redux/utils/firebaseWrapper';
 
 const fireRef = new Firebase(FIREBASE);
 
@@ -11,6 +12,10 @@ const LOGIN_REQUEST = 'LOGIN_REQUEST';
 const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
 const LOGIN_ERROR = 'LOGIN_ERROR';
 
+const USER_SAVE_REQUEST = 'USER_SAVE_REQUEST';
+const USER_SAVE_SUCCESS = 'USER_SAVE_SUCCESS';
+const USER_SAVE_ERROR = 'USER_SAVE_ERROR';
+
 const LOGOUT_SUCCESS = 'LOGOUT_SUCCESS';
 
 // ------------------------------------
@@ -18,7 +23,17 @@ const LOGOUT_SUCCESS = 'LOGOUT_SUCCESS';
 // ------------------------------------
 const loginRequest = createAction(LOGIN_REQUEST, () => null);
 const loginSuccess = createAction(LOGIN_SUCCESS, (authData) => authData);
-const loginError = createAction(LOGIN_ERROR, (error) => new Error(error));
+const loginError = createAction(LOGIN_ERROR, (error) => error);
+
+const userSaveRequest = createAction(USER_SAVE_REQUEST, (authData) => authData);
+const userSaveSuccess = createAction(USER_SAVE_SUCCESS, (val) => val);
+const userSaveError = createAction(USER_SAVE_ERROR, (error) => error);
+
+const logoutSuccess = createAction(LOGOUT_SUCCESS, () => null);
+
+// ------------------------------------
+// Thunks
+// ------------------------------------
 
 const loginAsync = () => {
   return (dispatch, getState) => {
@@ -42,29 +57,44 @@ const loginAsync = () => {
 
 const loginListener = () => {
   return (dispatch, getState) => {
-    fireRef.onAuth(
+    wrap(fireRef).onAuth(
       (authData) => {
+        if (!authData) {
+          dispatch(logoutSuccess());
+          return;
+        }
+
         dispatch(loginSuccess(authData));
+
+        // save user to database
+        dispatch(userSaveRequest(authData));
+        const userRef = fireRef.child('users').child(authData.uid);
+        userRef.set({
+          provider: 'facebook',
+          name: authData.facebook.displayName
+        });
+        userRef.once('value',
+          (snapshot) => {
+            const val = snapshot.val();
+            dispatch(userSaveSuccess(val));
+          }, (error) => {
+            dispatch(userSaveError(error));
+          });
       });
   };
 };
 
-const logoutSuccess = createAction(LOGOUT_SUCCESS, () => null);
-
 const logout = () => {
-  return (dispatch, getState) => {
-    fireRef.unauth();
-    dispatch(logoutSuccess());
-  };
+  return (dispatch, getState) => fireRef.unauth();
 };
 
 export const actions = {
   loginAsync,
-  logout
+  logout,
 };
 
 export const listeners = {
-  loginListener
+  loginListener,
 };
 
 // ------------------------------------
