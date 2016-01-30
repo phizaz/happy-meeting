@@ -83,8 +83,8 @@ const createAsync = (name, title) => {
           });
         })
         .catch(() => {
-          dispatch(createError('duplicate question'));
-          reject('duplicate question');
+          dispatch(createError('duplicate question eiei'));
+          reject('duplicate question eiei');
         });
     });
   };

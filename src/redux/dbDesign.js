@@ -30,10 +30,10 @@
         'unique-user-string': {
           votes: {
             'date-number': {
-              peroids: [0, 0, 0]
+              periods: [0, 0, 0]
             },
             'date-number': {
-              peroids: [0, 2, 1]
+              periods: [0, 2, 1]
             }
           }
         }

@@ -1,13 +1,15 @@
 import { createAction, handleActions } from 'redux-actions';
 import {FIREBASE} from 'redux/constant';
 import Firebase from 'firebase';
-import {wrap} from 'redux/utils/firebaseWrapper';
 
 const fireRef = new Firebase(FIREBASE);
 
 // ------------------------------------
 // Constants
 // ------------------------------------
+const REG_AUTH_LISTENER = 'REG_AUTH_LISTENER';
+const VOID_AUTH_LISTENER = 'VOID_AUTH_LISTENER';
+
 const LOGIN_REQUEST = 'LOGIN_REQUEST';
 const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
 const LOGIN_ERROR = 'LOGIN_ERROR';
@@ -21,6 +23,11 @@ const LOGOUT_SUCCESS = 'LOGOUT_SUCCESS';
 // ------------------------------------
 // Actions
 // ------------------------------------
+const regListener =
+  createAction(REG_AUTH_LISTENER, (name, ref) => ({name, ref}));
+const voidListener =
+  createAction(VOID_AUTH_LISTENER, () => {});
+
 const loginRequest = createAction(LOGIN_REQUEST, () => null);
 const loginSuccess = createAction(LOGIN_SUCCESS, (authData) => authData);
 const loginError = createAction(LOGIN_ERROR, (error) => error);
@@ -55,9 +62,10 @@ const loginAsync = () => {
   };
 };
 
-const loginListener = () => {
+const authListener = () => {
   return (dispatch, getState) => {
-    wrap(fireRef).onAuth(
+    dispatch(regListener('auth', fireRef));
+    fireRef.onAuth(
       (authData) => {
         if (!authData) {
           dispatch(logoutSuccess());
@@ -84,6 +92,17 @@ const loginListener = () => {
   };
 };
 
+const voidAuthListener = () => {
+  return (dispatch, getState) => {
+    const listeners = getState().auth.listeners;
+    Object.keys(listeners).forEach((name) => {
+      // turn off each listeners
+      listeners[name].off();
+    });
+    dispatch(voidListener());
+  };
+};
+
 const logout = () => {
   return (dispatch, getState) => fireRef.unauth();
 };
@@ -94,13 +113,31 @@ export const actions = {
 };
 
 export const listeners = {
-  loginListener,
+  authListener,
+  voidAuthListener,
 };
 
 // ------------------------------------
 // Reducer
 // ------------------------------------
 export default handleActions({
+  [REG_AUTH_LISTENER]: (state, {payload}) => {
+    return {
+      ...state,
+      listeners: {
+        ...state.listeners,
+        [payload.name]: payload.ref,
+      },
+    };
+  },
+
+  [VOID_AUTH_LISTENER]: (state, {payload}) => {
+    return {
+      ...state,
+      listeners: {},
+    };
+  },
+
   [LOGIN_REQUEST]: (state, { payload }) => {
     return {
       ...state,
@@ -136,14 +173,20 @@ export default handleActions({
   [LOGOUT_SUCCESS]: (state, { payload }) => {
     return {
       ...state,
-      authData: null
+      _login: {
+        ...state._login,
+        loading: false,
+      },
+      authData: null,
     };
   }
 
 }, {
   // default state
+  listeners: {},
+
   _login: {
-    loading: false,
+    loading: true,
     error: null
   },
   authData: null

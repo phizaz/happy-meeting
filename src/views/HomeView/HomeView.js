@@ -1,30 +1,24 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux';
+import { dispatch } from 'redux/store';
 // import { Link } from 'react-router';
 import { actions as authActions } from '../../redux/modules/auth';
 import { actions as homeActions } from '../../redux/modules/home';
+import { actions as questionActions } from '../../redux/modules/question';
+import { routeActions } from 'redux-simple-router';
 
 const actions = {
   ...authActions,
-  ...homeActions
+  ...homeActions,
+  ...questionActions,
+  ...routeActions,
 };
-
 // import classes from './HomeView.scss';
 
-// We define mapStateToProps where we'd normally use
-// the @connect decorator so the data requirements are clear upfront, but then
-// export the decorated component after the main class definition so
-// the component can be tested w/ and w/o being connected.
-// See: http://rackt.github.io/redux/docs/recipes/WritingTests.html
 const mapStateToProps = (state) => state;
 
 export class HomeView extends React.Component {
   static propTypes = {
-    homeNameChange: PropTypes.func.isRequired,
-    homeTitleChange: PropTypes.func.isRequired,
-    loginAsync: PropTypes.func.isRequired,
-    createAsync: PropTypes.func.isRequired,
-    logout: PropTypes.func.isRequired,
     auth: PropTypes.object.isRequired,
     home: PropTypes.object.isRequired,
   };
@@ -34,16 +28,24 @@ export class HomeView extends React.Component {
     const home = this.props.home;
 
     const handleNameChange = (event) => {
-      this.props.homeNameChange(event.target.value);
+      dispatch(actions.homeNameChange(event.target.value));
     };
 
     const handleTitleChange = (event) => {
-      this.props.homeTitleChange(event.target.value);
+      dispatch(actions.homeTitleChange(event.target.value));
     };
 
-    const handleClick = () => {
-      this.props.loginAsync()
-        .then(() => this.props.createAsync(home.name, home.title));
+    const handleCreate = () => {
+      dispatch(actions.loginAsync())
+        .then(() =>
+          dispatch(actions.createAsync(home.name, home.title)))
+        .then(() =>
+          dispatch(actions.joinAsync(home.name)))
+        .then(() =>
+          dispatch(actions.push(`/question/${home.name}`)))
+        .catch((err) => {
+          console.log('error:', err);
+        });
     };
 
     const loginText = auth._login.loading
@@ -86,7 +88,7 @@ export class HomeView extends React.Component {
               <div className="btn-group">
                 <button className='btn btn-lg btn-primary'
                   disabled={!home.name || !home.title}
-                  onClick={handleClick}>
+                  onClick={handleCreate}>
                   {loginText}
                 </button>
                 <button className='btn btn-lg btn-primary'
@@ -97,7 +99,7 @@ export class HomeView extends React.Component {
 
               <div className="btn-group">
                 <button className='btn btn-lg btn-primary'
-                  onClick={this.props.logout}>
+                  onClick={() => dispatch(actions.logout())}>
                   Logout
                 </button>
               </div>
@@ -110,4 +112,4 @@ export class HomeView extends React.Component {
   }
 }
 
-export default connect(mapStateToProps, actions)(HomeView);
+export default connect(mapStateToProps)(HomeView);

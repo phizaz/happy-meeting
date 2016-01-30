@@ -1,5 +1,7 @@
 {
   auth: {
+    listeners: {},
+
     _login: {
       loading: false,
       error: null
@@ -18,12 +20,15 @@
     title: string (any),
   },
 
-  join: {
-    name: string (english),
-    title: string (any),
-  },
-
   question: {
+    listeners: {},
+
+    _join: {
+      loading: false,
+      error: null,
+      name: null,
+    },
+
     questionData: {
       name: String,
       title: String (subject to change),
@@ -47,17 +52,17 @@
         'unique-user-string': {
           votes: {
             'date-number': {
-              peroids: [0, 0, 0]
+              periods: [0, 0, 0]
             },
             'date-number': {
-              peroids: [0, 2, 1]
+              periods: [0, 2, 1]
             }
           }
         }
       }
     },
 
-    vote: {
+    votes: {
       'date-number': {
         // number: 0-6
         // date - string
