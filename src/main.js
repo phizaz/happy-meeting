@@ -2,8 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import Root from './containers/Root';
 
+import history from './history';
+import store from './store';
 import routes from './routes';
-import {history, store} from './redux/store';
 
 // Render the React application to the DOM
 ReactDOM.render(

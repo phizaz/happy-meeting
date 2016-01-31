@@ -1,5 +1,5 @@
 import React, { PropTypes } from 'react';
-import { dispatch } from '../../redux/store';
+import { dispatch } from '../../store';
 import { actions as questionActions } from '../../redux/modules/question';
 import { actions as authActions } from '../../redux/modules/auth';
 

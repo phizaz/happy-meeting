@@ -1,7 +1,7 @@
 import React, { PropTypes } from 'react';
 import { Provider } from 'react-redux';
 import { Router } from 'react-router';
-import { dispatch } from '../redux/store';
+import { dispatch } from '../store';
 import { listeners } from '../redux/modules/auth';
 
 export default class Root extends React.Component {

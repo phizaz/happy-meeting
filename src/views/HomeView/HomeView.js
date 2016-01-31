@@ -1,6 +1,7 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux';
-import { dispatch } from '../../redux/store';
+
+import { dispatch } from '../../store';
 // import { Link } from 'react-router';
 import { actions as authActions } from '../../redux/modules/auth';
 import { actions as homeActions } from '../../redux/modules/home';
