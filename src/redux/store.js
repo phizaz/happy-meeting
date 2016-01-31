@@ -1,16 +1,19 @@
-import configureStore from 'redux/configureStore';
-
 import { useRouterHistory } from 'react-router';
 import { createHistory } from 'history';
 
+import configureStore from './configureStore';
+
 const historyConfig = { basename: __BASENAME__ };
-const history = useRouterHistory(createHistory)(historyConfig);
+
+export const history = useRouterHistory(createHistory)(historyConfig);
 
 const initialState = window.__INITIAL_STATE__;
-const store = configureStore({ initialState, history });
+
+console.log('initialState:', initialState);
+
+export const store = configureStore({ initialState, history });
 
 export const dispatch = store.dispatch;
 export const getState = store.getState;
 
-export default store;
-
+console.log('getState:', getState());

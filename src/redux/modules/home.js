@@ -44,8 +44,9 @@ const createAsync = (name, title) => {
         return new Promise((resolve, reject) => {
           questionRef.once('value', (snapshot) => {
             const val = snapshot.val();
+            console.log('val:', val);
             if (val) {
-              reject();
+              reject('duplicate question');
             } else {
               resolve();
             }
@@ -82,9 +83,9 @@ const createAsync = (name, title) => {
             resolve(val);
           });
         })
-        .catch(() => {
-          dispatch(createError('duplicate question eiei'));
-          reject('duplicate question eiei');
+        .catch((error) => {
+          dispatch(createError(error));
+          reject(error);
         });
     });
   };

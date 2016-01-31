@@ -1,22 +1,25 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux';
-import { dispatch } from 'redux/store';
+import { dispatch } from '../../redux/store';
 // import { Link } from 'react-router';
 import { actions as authActions } from '../../redux/modules/auth';
-import { actions as homeActions } from '../../redux/modules/home';
-import { routeActions } from 'redux-simple-router';
+import { actions as questionActions } from '../../redux/modules/question';
+import { routeActions } from 'react-router-redux';
 
 import {listeners} from 'redux/modules/question';
 
 const actions = {
   ...authActions,
-  ...homeActions,
+  ...questionActions,
   ...routeActions,
   ...listeners,
 };
 
 import classNames from 'classnames';
 import classes from './QuestionView.scss';
+
+import LoadingView from '../LoadingView/LoadingView';
+import JoinView from './JoinView';
 
 // We define mapStateToProps where we'd normally use
 // the @connect decorator so the data requirements are clear upfront, but then
@@ -25,30 +28,8 @@ import classes from './QuestionView.scss';
 // See: http://rackt.github.io/redux/docs/recipes/WritingTests.html
 const mapStateToProps = (state) => state;
 
-// wait for auth to confirm
-class Loading extends React.Component {
-  render () {
-    const containerClass = classNames(classes.spinner, 'container', 'container-table');
-    return (
-      <div className={containerClass}>
-        <div className={classNames(classes.vertical, 'row')}>
-          <div className="text-center col-xs-4 col-xs-offset-4">
-            <h1>
-              <i className="fa fa-circle-o-notch fa-spin"></i> Please Wait...
-            </h1>
-          </div>
-        </div>
-      </div>
-    );
-  }
-}
-
 class Question extends React.Component {
   static propTypes = {
-    homeNameChange: PropTypes.func.isRequired,
-    homeTitleChange: PropTypes.func.isRequired,
-    loginAsync: PropTypes.func.isRequired,
-    createAsync: PropTypes.func.isRequired,
     logout: PropTypes.func.isRequired,
     push: PropTypes.func.isRequired,
     auth: PropTypes.object.isRequired,
@@ -57,11 +38,30 @@ class Question extends React.Component {
     routeParams: PropTypes.object.isRequired,
   };
 
+  get hasFetched () {
+    return this.props.question.questionData;
+  }
+
+  get hasJoined () {
+    const authData = this.props.auth.authData;
+    const question = this.props.question;
+    const questionData = question.questionData;
+    return questionData.participants[authData.uid];
+  }
+
   componentDidMount () {
     const authData = this.props.auth.authData;
     const question = this.props.routeParams.name;
-    // console.log('###question view mounted:', authData);
-    dispatch(actions.questionListener(authData, question));
+    let promise = Promise.resolve(null);
+
+    if (!this.hasFetched) {
+      // this won't be required if the questionData has been fetched in joining process, but it's indeed required for cold start, directly access to this view
+      // fetch the questionData
+      promise = dispatch(actions.questionAsync(question));
+    }
+    // the listener should not perform unless the question is fetched !
+    promise.then(
+      () => dispatch(actions.participantsListener(authData, question)));
   }
 
   componentWillUnmount () {
@@ -69,21 +69,86 @@ class Question extends React.Component {
     dispatch(actions.voidQuestionListener());
   }
 
-  get ready () {
-    return !!this.props.question.questionData;
+  dateNumberToString (number) {
+    const mapper = {
+      0: 'Monday',
+      1: 'Tuesday',
+      2: 'Wednesday',
+      3: 'Thursday',
+      4: 'Friday',
+      5: 'Saturday',
+      6: 'Sunday',
+    };
+    return mapper[number];
+  }
+
+  voteToString (number) {
+    return `level-${number}`;
+  }
+
+  handleVote (date, period) {
+    const questionData = this.props.question.questionData;
+    dispatch(actions.vote(questionData.name, date, period));
   }
 
   render () {
-    if (!this.ready) {
-      return <Loading />;
+    const question = this.props.question;
+    const questionData = question.questionData;
+
+    if (questionData === undefined) {
+      // loading question data
+      return <LoadingView />;
+    } else if (questionData === null) {
+      // question not found
+      return (
+        <div>
+          <h1 className="text-center">Oops... the question not found</h1>
+        </div>
+      );
+    } else if (!this.hasJoined) {
+      // user not participated in this question, ask for joining
+      return <JoinView {...this.props} />;
     } else {
-      const questionData = this.props.question.questionData;
+      let tableBody;
+      if (question.votes) {
+        tableBody = Object.keys(question.votes).map(
+          (date) => {
+            const x = question.votes[date];
+            return (
+              <tr>
+                <td>{this.dateNumberToString(date)}</td>
+                {x.periods.map((y, idx) =>
+                  <td className={classNames(classes[this.voteToString(y)], classes.level)} onClick={
+                    () => this.handleVote(date, idx)
+                  }></td>
+                )}
+              </tr>
+            );
+          });
+      }
 
       return (
-        <div className='container text-center'>
+        <div className={classNames(classes.main, 'container')}>
           <div className="row">
             <div className="col-md-12">
-              <h1>{questionData.title} <small>{questionData.name}</small></h1>
+              <h1>
+                  {questionData.title} <small>{questionData.name}</small>
+              </h1>
+              <h4 className={classes.subtitle}><small>Asked by {questionData.owner.name}</small></h4>
+            </div>
+
+            <div className="col-md-12">
+              <table className="table text-center">
+                <thead>
+                  <th>Day</th>
+                  {questionData.labels.map(
+                    x => <th>{x}</th>
+                  )}
+                </thead>
+                <tbody>
+                  {tableBody}
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -107,11 +172,13 @@ export class QuestionView extends React.Component {
   }
 
   render () {
+    console.log('get in question view');
     if (this.isAuthResolving) {
-      return <Loading />;
+      // waiting for auth resoliving
+      return <LoadingView />;
     } else if (!this.isAuthorized) {
-      dispatch(actions.push('/'));
-      return false;
+      // the user is not authorized
+      return <JoinView {...this.props} />;
     } else {
       return <Question {...this.props} />;
     }

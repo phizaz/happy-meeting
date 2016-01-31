@@ -1,0 +1,14 @@
+.spinner {
+  background: rgba(0, 0, 0, .8);
+  color: #fff;
+  display: table;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  width: 100%;
+
+  .vertical {
+    display: table-cell;
+    vertical-align: middle;
+  }
+}

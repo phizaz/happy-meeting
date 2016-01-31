@@ -1,13 +1,32 @@
-.spinner {
-  position: absolute;
-  height: 100%;
-  width: 100%;
-  top: 0px;
-  background: rgb(0,0,0);
-  display: table;
+.main {
+  max-width: 600px;
 
-  .vertical {
-    display: table-cell;
-    vertical-align: middle;
+  h1 {
+    margin: 2rem auto;
+  }
+
+  h4 {
+    margin: 1rem auto;
+  }
+
+  .subtitle {
+    margin-top: -1.5rem;
+    position: relative;
+  }
+
+  .level {
+    transition: background-color .35s ease;
+  }
+
+  .level-0 {
+    background-color: rgb(231, 76, 59);
+  }
+
+  .level-1 {
+    background-color: rgb(241, 196, 15);
+  }
+
+  .level-2 {
+    background-color: rgb(46,204,113);
   }
 }

@@ -1,11 +1,11 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux';
-import { dispatch } from 'redux/store';
+import { dispatch } from '../../redux/store';
 // import { Link } from 'react-router';
 import { actions as authActions } from '../../redux/modules/auth';
 import { actions as homeActions } from '../../redux/modules/home';
 import { actions as questionActions } from '../../redux/modules/question';
-import { routeActions } from 'redux-simple-router';
+import { routeActions } from 'react-router-redux';
 
 const actions = {
   ...authActions,
@@ -23,30 +23,31 @@ export class HomeView extends React.Component {
     home: PropTypes.object.isRequired,
   };
 
+  handleNameChange (event) {
+    dispatch(actions.homeNameChange(event.target.value));
+  }
+
+  handleTitleChange (event) {
+    dispatch(actions.homeTitleChange(event.target.value));
+  }
+
+  handleCreate (event) {
+    const home = this.props.home;
+    dispatch(actions.loginAsync())
+      .then(() =>
+        dispatch(actions.createAsync(home.name, home.title)))
+      .then(() =>
+        dispatch(actions.joinAsync(home.name)))
+      .then(() =>
+        dispatch(actions.push(`/question/${home.name}`)))
+      .catch((err) => {
+        console.log('error:', err);
+      });
+  }
+
   render () {
     const auth = this.props.auth;
     const home = this.props.home;
-
-    const handleNameChange = (event) => {
-      dispatch(actions.homeNameChange(event.target.value));
-    };
-
-    const handleTitleChange = (event) => {
-      dispatch(actions.homeTitleChange(event.target.value));
-    };
-
-    const handleCreate = () => {
-      dispatch(actions.loginAsync())
-        .then(() =>
-          dispatch(actions.createAsync(home.name, home.title)))
-        .then(() =>
-          dispatch(actions.joinAsync(home.name)))
-        .then(() =>
-          dispatch(actions.push(`/question/${home.name}`)))
-        .catch((err) => {
-          console.log('error:', err);
-        });
-    };
 
     const loginText = auth._login.loading
       ? <span>Logging in..</span>
@@ -73,14 +74,14 @@ export class HomeView extends React.Component {
             <div className="form-group">
               <input type="text"
                 value={home.name}
-                onChange={handleNameChange}
+                onChange={(e) => this.handleNameChange(e)}
                 className="form-control input-md"
                 placeholder="ใส่ชื่อเรียกสั้น ๆ"/>
             </div>
             <div className="form-group">
               <input type="text"
                 value={home.title}
-                onChange={handleTitleChange}
+                onChange={(e) => this.handleTitleChange(e)}
                 className="form-control input-lg"
                 placeholder="ใส่หัวข้อของคำถาม"/>
             </div>
@@ -88,7 +89,7 @@ export class HomeView extends React.Component {
               <div className="btn-group">
                 <button className='btn btn-lg btn-primary'
                   disabled={!home.name || !home.title}
-                  onClick={handleCreate}>
+                  onClick={() => this.handleCreate()}>
                   {loginText}
                 </button>
                 <button className='btn btn-lg btn-primary'

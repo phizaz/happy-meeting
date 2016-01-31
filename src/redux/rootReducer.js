@@ -1,5 +1,5 @@
 import { combineReducers } from 'redux';
-import { routeReducer as router } from 'redux-simple-router';
+import { routeReducer as router } from 'react-router-redux';
 
 import auth from './modules/auth';
 import home from './modules/home';

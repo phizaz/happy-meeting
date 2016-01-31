@@ -29,6 +29,12 @@
       name: null,
     },
 
+    _question: {
+      loading: false,
+      error: null,
+      name: null,
+    },
+
     questionData: {
       name: String,
       title: String (subject to change),
