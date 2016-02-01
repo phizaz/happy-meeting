@@ -37,7 +37,7 @@ class JoinView extends React.Component {
     if (!authData) {
       dispatch(actions.loginAsync())
         .then((authData) => {
-          if (!questionData.participants[authData.uid]) {
+          if (questionData.participants[authData.uid]) {
             // the user has joined already !
             return;
           }
