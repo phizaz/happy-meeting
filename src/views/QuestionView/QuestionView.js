@@ -96,6 +96,32 @@ class Ranking extends React.Component {
   }
 }
 
+class Participants extends React.Component {
+  static propTypes = {
+    participants: PropTypes.object.isRequired,
+  };
+
+  get participantsArray () {
+    const participants = this.props.participants;
+    return Object.keys(participants)
+      .map(uid => participants[uid]);
+  }
+
+  render () {
+    const participants = this.participantsArray;
+    console.log('participants:', participants);
+    return (
+      <div className="row">
+        {participants.map(x => (
+          <div className="col-sm-4 col-xs-6">
+            {x.name}
+          </div>
+        ))}
+      </div>
+    );
+  }
+}
+
 class Question extends React.Component {
   static propTypes = {
     logout: PropTypes.func.isRequired,
@@ -129,7 +155,10 @@ class Question extends React.Component {
     }
     // the listener should not perform unless the question is fetched !
     promise.then(
-      () => dispatch(actions.participantsListener(authData, question)));
+      () => {
+        dispatch(actions.participantsListener(authData, question));
+        dispatch(actions.votesListener(authData, question));
+      });
   }
 
   componentWillUnmount () {
@@ -150,7 +179,7 @@ class Question extends React.Component {
     const question = this.props.question;
     const questionData = question.questionData;
 
-    if (questionData === undefined) {
+    if (!this.hasFetched) {
       // loading question data
       return <LoadingView />;
     } else if (questionData === null) {
@@ -165,7 +194,9 @@ class Question extends React.Component {
       return <JoinView {...this.props} />;
     } else {
       let tableBody;
+      let rankingBody;
       if (question.votes) {
+        // will avoid the ui glitches when the vote data has not yet loaded
         tableBody = Object.keys(question.votes).map(
           (date) => {
             const x = question.votes[date];
@@ -180,6 +211,8 @@ class Question extends React.Component {
               </tr>
             );
           });
+
+        rankingBody = <Ranking {...this.props} />;
       }
 
       return (
@@ -209,7 +242,13 @@ class Question extends React.Component {
             </div>
 
             <div className="col-md-12">
-              <Ranking {...this.props} />
+              <h1>Best meets..</h1>
+              {rankingBody}
+            </div>
+
+            <div className="col-md-12">
+              <h1>Participants</h1>
+              <Participants participants={questionData.participants} />
             </div>
           </div>
         </div>

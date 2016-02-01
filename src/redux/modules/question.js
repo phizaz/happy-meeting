@@ -1,8 +1,11 @@
 import { createAction, handleActions } from 'redux-actions';
-import {FIREBASE} from 'redux/constant';
-import Firebase from 'firebase';
+import {
+  fireRef,
+  fetch,
+  fetchOrFail,
+  fetchUser,
+  doesExist } from '../utils/firebase';
 
-const fireRef = new Firebase(FIREBASE);
 // ------------------------------------
 // Constants
 // ------------------------------------
@@ -19,6 +22,7 @@ const QUESTION_ERROR = 'QUESTION_ERROR';
 
 const VOTE_REQUEST = 'VOTE_REQUEST';
 const PARTICIPANTS_UPDATE = 'PARTICIPANTS_UPDATE';
+const VOTES_UPDATE = 'VOTES_UPDATE';
 
 // ------------------------------------
 // Actions
@@ -45,7 +49,9 @@ const questionError =
 const voteRequest =
   createAction(VOTE_REQUEST, (question, date, period) => ({question, date, period}));
 const participantsUpdate =
-  createAction(PARTICIPANTS_UPDATE, (participants, votes) => ({participants, votes}));
+  createAction(PARTICIPANTS_UPDATE, (participants) => participants);
+const votesUpdate =
+  createAction(VOTES_UPDATE, (votes, myVotes) => ({votes, myVotes}));
 
 const joinAsync = (name) => {
   return (dispatch, getState) => {
@@ -55,55 +61,23 @@ const joinAsync = (name) => {
     return new Promise((resolve, reject) => {
       dispatch(joinRequest(name));
 
-      const doesExist = (ref) => {
-        // check if the question exists
-        return new Promise((resolve, reject) => {
-          questionRef.once('value', (snapshot) => {
-            const val = snapshot.val();
-            if (val) {
-              resolve(val);
-            } else {
-              reject();
-            }
-          });
-        });
-      };
-
       doesExist(questionRef)
         .then((questionData) => {
           console.log('join a question', questionData);
-          // join a new question, and assign the default vote value
-          const votesRef = questionRef.child('participants').child(authData.uid);
-          votesRef.set({
-            votes: questionData.structure.map(x => {
-              return {
-                date: x.date,
-                periods: x.periods
-              };
-            })
-          });
+          // join a new question, and assign the default vote and add himself as one of the participants
+          // set participants
+          const participantsRef = questionRef.child('participants').child(authData.uid);
+          participantsRef.set(true);
 
-          const getQuestionData = () => {
-            return new Promise((resolve, reject) => {
-              questionRef.once('value', (snapshot) => {
-                resolve(snapshot.val());
-              });
-            });
-          };
+          // set votes
+          const votesRef = questionRef.child('votes').child(authData.uid);
+          votesRef.set(questionData.structure.map(x => ({
+            date: x.date,
+            periods: x.periods
+          })));
 
-          const getVotesData = () => {
-            return new Promise((resolve, reject) => {
-              votesRef.once('value', (snapshot) => {
-                resolve(snapshot.val());
-              });
-            });
-          };
-
-          Promise.all([getQuestionData(), getVotesData()])
-            .then((values) => {
-              dispatch(joinSuccess(name));
-              resolve(name);
-            });
+          dispatch(joinSuccess(name));
+          resolve(name);
         })
         .catch(() => {
           dispatch(joinError('question not found'));
@@ -116,49 +90,36 @@ const joinAsync = (name) => {
 const questionAsync = (name) => {
   return (dispatch, getState) => {
     dispatch(questionRequest(name));
-    const ref = fireRef
+    const questionRef = fireRef
       .child('questions')
       .child(name);
 
-    function getQuestionData (name) {
-      return new Promise((resolve, reject) => {
-        ref.once('value', (snapshot) => {
-          const questionData = snapshot.val();
-          if (!questionData) {
-            reject('question not found');
-          } else {
-            resolve(questionData);
-          }
-        });
-      });
-    }
-
-    function getOwner (name) {
-      return new Promise((resolve, reject) => {
-        fireRef.child('users').child(name)
-          .once('value', (snapshot) => {
-            const owner = snapshot.val();
-            if (!owner) {
-              reject('owner not found');
-            } else {
-              resolve(owner);
-            }
-          });
-      });
-    }
-
     return new Promise((resolve, reject) => {
-      getQuestionData(name)
+      // fetch question
+      fetchOrFail(questionRef)
         .then((questionData) =>
-          Promise.all([questionData, getOwner(questionData.owner)]))
+          Promise.all([
+            questionData,
+            // fetch owner
+            fetchUser(questionData.owner)
+          ].concat(
+            // fetch all participants
+            Object.keys(questionData.participants)
+              .map((uid) => fetchUser(uid))
+          )))
         .then((values) => {
-          const [questionData, owner] = values;
-          const result = {
+          const [questionData, owner, ...participants] = values;
+          const qData = {
             ...questionData,
-            owner: owner
+            owner: owner,
+            participants: participants.reduce((acc, x) => {
+              // turns array into object (with uid as its indices)
+              acc[x.uid] = x;
+              return acc;
+            }, {})
           };
-          dispatch(questionSuccess(result));
-          resolve(result);
+          dispatch(questionSuccess(qData));
+          resolve(qData);
         })
         .catch((error) => {
           dispatch(questionError(error));
@@ -172,14 +133,14 @@ const vote = (question, date, period) => {
   return (dispatch, getState) => {
     dispatch(voteRequest(question, date, period));
     const authData = getState().auth.authData;
-    const currentVote = getState().question.votes[date].periods[period];
+    const currentVote =
+      getState().question.votes[date].periods[period];
     const ref =
       fireRef
         .child('questions')
         .child(question)
-        .child('participants')
-        .child(authData.uid)
         .child('votes')
+        .child(authData.uid)
         .child(date)
         .child('periods')
         .child(period);
@@ -194,11 +155,35 @@ const participantsListener = (authData, question) => {
         .child('questions')
         .child(question)
         .child('participants');
-    dispatch(regListener('question', ref));
+    dispatch(regListener('participants', ref));
     ref.on('value', (snapshot) => {
       const participants = snapshot.val();
-      const votes = participants[authData.uid].votes;
-      dispatch(participantsUpdate(participants, votes));
+      Promise.all(participants.map(uid => fetchUser(uid)))
+        .then((participants) => {
+          dispatch(participantsUpdate(
+            // turn an array to object with uid as its indices
+            participants.reduce((acc, x) => {
+              acc[x.uid] = x;
+              return acc;
+            }, {})
+          ));
+        });
+    });
+  };
+};
+
+const votesListener = (authData, question) => {
+  return (dispatch, getState) => {
+    const ref =
+      fireRef
+        .child('questions')
+        .child(question)
+        .child('votes');
+    dispatch(regListener('question', ref));
+    ref.on('value', (snapshot) => {
+      const votes = snapshot.val();
+      const myVotes = votes[authData.uid];
+      dispatch(votesUpdate(votes, myVotes));
     });
   };
 };
@@ -222,13 +207,14 @@ export const actions = {
 
 export const listeners = {
   participantsListener,
+  votesListener,
   voidQuestionListener,
 };
 
 // ------------------------------------
 // Reducer
 // ------------------------------------
-const calculateScore = (structure, participants) => {
+const calculateScore = (structure, votes) => {
   // [[0, 0, 0], [0, 1, 2]] => avg => [0, 0.5, 1]
   const avg = (arr) => {
     const result = [];
@@ -247,8 +233,8 @@ const calculateScore = (structure, participants) => {
     result[date] = {
       date,
       periods: avg(
-        Object.keys(participants)
-          .map((name) => participants[name].votes[date].periods))
+        Object.keys(votes)
+          .map((uid) => votes[uid][date].periods))
     };
   }
   return result;
@@ -339,17 +325,26 @@ export default handleActions({
   },
 
   [PARTICIPANTS_UPDATE]: (state, { payload }) => {
-    const q = state.questionData;
-    const p = payload.participants;
-    const v = payload.votes;
     return {
       ...state,
       questionData: {
         ...state.questionData,
-        participants: p
+        participants: payload
       },
-      votes: v,
-      score: calculateScore(q.structure, p),
+    };
+  },
+
+  [VOTES_UPDATE]: (state, {payload}) => {
+    const q = state.questionData;
+    const {votes, myVotes} = payload;
+    return {
+      ...state,
+      questionData: {
+        ...state.questionData,
+        votes: votes,
+      },
+      votes: myVotes,
+      score: calculateScore(q.structure, votes),
     };
   },
 

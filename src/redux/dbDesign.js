@@ -27,14 +27,16 @@
       },
 
       participants: {
+        'unique-user-string': true,
+      },
+
+      votes: {
         'unique-user-string': {
-          votes: {
-            'date-number': {
-              periods: [0, 0, 0]
-            },
-            'date-number': {
-              periods: [0, 2, 1]
-            }
+          'date-number': {
+            periods: [0, 0, 0]
+          },
+          'date-number': {
+            periods: [0, 2, 1]
           }
         }
       }

@@ -74,7 +74,8 @@ const createAsync = (name, title) => {
               };
             }),
 
-            participants: {}
+            participants: {},
+            votes: {},
           });
 
           questionRef.once('value', (snapshot) => {

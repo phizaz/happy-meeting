@@ -38,7 +38,10 @@
     questionData: {
       name: String,
       title: String (subject to change),
-      owner: 'unique-user-string',
+      owner: {
+        name: ...,
+        provider: ...,
+      },
       valid: boolean,
       startTime: datetime,
       duration: null (inf) | seconds,
@@ -56,13 +59,18 @@
 
       participants: {
         'unique-user-string': {
-          votes: {
-            'date-number': {
-              periods: [0, 0, 0]
-            },
-            'date-number': {
-              periods: [0, 2, 1]
-            }
+          name: ...,
+          provider: ...,
+        },
+      },
+
+      votes: {
+        'unique-user-string': {
+          'date-number': {
+            periods: [0, 0, 0]
+          },
+          'date-number': {
+            periods: [0, 2, 1]
           }
         }
       }
