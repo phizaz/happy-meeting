@@ -217,15 +217,29 @@ export const listeners = {
 const calculateScore = (structure, votes) => {
   // [[0, 0, 0], [0, 1, 2]] => avg => [0, 0.5, 1]
   const avg = (arr) => {
-    const result = [];
-    for (let j = 0; j < arr[0].length; ++j) {
-      let sum = 0;
-      for (let i = 0; i < arr.length; ++i) {
-        sum += arr[i][j];
-      }
-      result.push(sum / arr.length);
+    // const result = [];
+    // for (let j = 0; j < arr[0].length; ++j) {
+    //   let sum = 0;
+    //   for (let i = 0; i < arr.length; ++i) {
+    //     sum += arr[i][j];
+    //   }
+    //   result.push(sum / arr.length);
+    // }
+    // return result;
+
+    const acc = [];
+    for (let i = 0; i < arr[0].length; ++i) {
+      acc.push(0);
     }
-    return result;
+
+    const sum = arr.reduce(
+      (acc, row) => acc.map(
+        (acc, i) => acc + row[i])
+      , acc
+    );
+
+    const avg = sum.map(x => x / arr.length);
+    return avg;
   };
   const allDates = Object.keys(structure);
   const result = {};
