@@ -1,4 +1,5 @@
-import history from './history';
+import history from './historyConst.js';
+console.log('history:', history);
 import configureStore from './redux/configureStore';
 const initialState = window.__INITIAL_STATE__;
 

@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import Root from './containers/Root';
 
-import history from './history';
+import history from './historyConst.js';
 import store from './store';
 import routes from './routes';
 

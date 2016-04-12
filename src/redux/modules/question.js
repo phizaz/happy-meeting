@@ -1,7 +1,6 @@
 import { createAction, handleActions } from 'redux-actions';
 import {
   fireRef,
-  fetch,
   fetchOrFail,
   fetchUser,
   doesExist } from '../utils/firebase';
